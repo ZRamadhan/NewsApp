@@ -36,6 +36,7 @@ object ApiConfig {
         return Retrofit.Builder()
             .baseUrl(url)
             .addConverterFactory(GsonConverterFactory.create())
+            .addCallAdapterFactory(NetworkAdapterFactory())
             .client(client)
             .build()
     }

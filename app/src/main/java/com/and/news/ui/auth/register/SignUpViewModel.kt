@@ -3,8 +3,11 @@ package com.and.news.ui.auth.register
 import android.content.Context
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.and.news.data.Event
 import com.and.news.data.remote.api.ApiConfig
+import com.and.news.data.remote.api.ResponseListener
 import com.and.news.data.remote.model.AuthResponse
+import com.and.news.data.remote.model.Data
 import com.and.news.data.remote.model.SignUpRequest
 import retrofit2.Call
 import retrofit2.Callback
@@ -28,20 +31,18 @@ class SignUpViewModel : ViewModel() {
 
         isLoading.value = true
         val client = ApiConfig.getUserService(context).registerUser(signUpRequest)
-        client.enqueue(object : Callback<AuthResponse> {
-            override fun onResponse(
-                call: Call<AuthResponse>,
-                response: Response<AuthResponse>
-            ) {
+
+        client.newProcess(object : ResponseListener<Data> {
+            override fun onSuccessData(data: Data) {
+                super.onSuccessData(data)
                 isLoading.value = false
-                if (response.isSuccessful) {
-                    dataSuccess.value = "Register Success"
-                } else dataError.value = "Register Failed"
+                dataSuccess.value = "Register Success"
             }
 
-            override fun onFailure(call: Call<AuthResponse>, t: Throwable) {
+            override fun onError(message: String, code: Int) {
+                super.onError(message, code)
                 isLoading.value = false
-                dataSuccess.value = t.message
+                dataSuccess.value = message
             }
         })
     }
