@@ -6,6 +6,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.and.news.data.Event
 import com.and.news.data.remote.api.ApiConfig
+import com.and.news.data.remote.api.ResponseListener
 import com.and.news.data.remote.model.AuthResponse
 import com.and.news.data.remote.model.Data
 import com.and.news.data.remote.model.SignInRequest
@@ -20,41 +21,35 @@ class ProfileViewModel : ViewModel() {
 
     fun getUser(context: Context, signInRequest: SignInRequest) {
         val client = ApiConfig.getUserService(context).getUser()
-        client.enqueue(object : Callback<AuthResponse> {
-            override fun onResponse(call: Call<AuthResponse>, response: Response<AuthResponse>) {
-                if (response.isSuccessful) {
-                    val responseBody = response.body()?.data
-                    data.value = responseBody
-                } else {
-                    if (response.code() == 403) {
-                        getToken(context, signInRequest)
-                    }
-                }
+        client.newProcess(object : ResponseListener<Data> {
+            override fun onSuccessData(newData: Data) {
+                super.onSuccessData(newData)
+                data.value = newData
             }
 
-            override fun onFailure(call: Call<AuthResponse>, t: Throwable) {
-                dataError.value = Event(t.message.toString())
-                Log.e("Profile Fragment", "onFailure: ${t.message}")
+            override fun onError(message: String, code: Int) {
+                super.onError(message, code)
+
+                if (code == 403) {
+                    getToken(context, signInRequest)
+                } else {
+                    dataError.value = Event(message)
+                }
             }
         })
     }
 
     private fun getToken(context: Context, signInRequest: SignInRequest) {
         val client = ApiConfig.getUserService(context).loginUser(signInRequest)
-        client.enqueue(object : Callback<AuthResponse> {
-            override fun onResponse(
-                call: Call<AuthResponse>,
-                response: Response<AuthResponse>
-            ) {
-                if (response.isSuccessful) {
-                    val responseBody = response.body()?.data
-                    data.value = responseBody
-                    Log.i("Profile Fragment", "onResponse: Get Token Success")
-                } else dataError.value = Event("Failed Get Token")
+        client.newProcess(object : ResponseListener<Data> {
+            override fun onSuccessData(newData: Data) {
+                super.onSuccessData(newData)
+                data.value = newData
             }
 
-            override fun onFailure(call: Call<AuthResponse>, t: Throwable) {
-                dataError.value = Event(t.message.toString())
+            override fun onError(message: String, code: Int) {
+                super.onError(message, code)
+                dataError.value = Event(message)
             }
         })
     }
